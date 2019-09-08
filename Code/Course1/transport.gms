@@ -1,4 +1,4 @@
-$Title  A Transportation Problem (TRNSPORT,SEQ=1)
+$Title  A Transportation Problem
 $Ontext
 
 This problem finds a least cost shipping schedule that meets
@@ -65,5 +65,5 @@ $Offtext
 
   Solve transport using lp minimizing z ;
 
-  Display x.l, x.m ;
+  Display x.l, x.m, demand.m ;
 
