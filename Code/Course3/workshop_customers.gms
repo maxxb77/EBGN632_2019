@@ -4,18 +4,23 @@ set
 i      "products sold" /bowls, tables, chairs/,
 j      "inputs"        /blanks, cherry, maple/,
 i_d(i) "subset of i requiring other products for production" /tables/,
-c      "customer sets" /1 * 10/;
+e      "customer sets" /1 * 10/;
 
 alias(i,ii);
 
 table
-p(i,c,*)   "Price of products sold ($ / product)"
+consumer_Characteristics(i,e,*)   "characteristics "
 $ondelim
 $include data\demand.csv
 $offdelim
 ;
 
-$exit
+parameter p(i,e) "Price of products sold ($ / product)",
+		  q(i,e) "quantity of produces customer is willing to purchase (products)";
+
+p(i,e) = consumer_Characteristics(i,e,"price");
+q(i,e) = consumer_Characteristics(i,e,"quantity");
+
 
 parameter
 c(j)   "Costs of inputs used ($ / input)" 
@@ -47,7 +52,7 @@ scalar hbar   "Total hours in a week (equal to forty hours)" /40/;
 scalar Sw_UnitReq "turn unit requirement off or on" /0/;
 
 Positive Variables
-X(i) "production of outputs (units)",
+X(i,e) "production of outputs for each customer(units)",
 Y(j) "use of inputs (inputs)";
 
 Variables Z "objective function value";
@@ -58,7 +63,8 @@ Equations
 ObjFn        "computed objective function value",
 Input_Req(i) "outputs required input - transformation",
 Hours_Limit  "louis can only work 40 hours in a week",
-Unit_req(i)  "each table requires four chair"
+Unit_req(i,e)  "each table requires four chair"
+Quantity_Limit_Customer(i,e) "cant sell more to customer c than they are willing to buy"
 ;
 
 *Signs that can be used in GAMS
@@ -67,25 +73,33 @@ Unit_req(i)  "each table requires four chair"
 **=l= -- less than
 
 
-ObjFn.. Z =e= sum(i,p(i) * X(i))
+ObjFn.. Z =e= sum((i,e),p(i,e) * X(i,e))
              -sum(j,c(j) * Y(j));
 
 Input_Req(i)..
 		sum(j,a(i,j) * Y(j)) =g= 
-		X(i);
+		 	sum(e,X(i,e));
 
 Hours_limit.. 
 		hbar =g=
-		sum(i,h(i) * X(i))
+		sum((i,e),h(i) * X(i,e))
 		;
 
-Unit_req(i)$i_d(i)..
-		sum(ii,d(i,ii) * X(ii)) =g= 
-		X(i);
+Unit_req(i,e)$i_d(i)..
+		sum((ii),d(i,ii) * X(ii,e)) =g= 
+		X(i,e);
+
+Quantity_Limit_Customer(i,e).. 
+		q(i,e) =g= X(i,e);
+
 
 Model workshop /all/;
 
 solve workshop using lp maximizing z;
+
+execute_unload "alldata_customers.gdx";
+
+$exit
 
 *appendices for variable reporting..
 *X.l -- level value
