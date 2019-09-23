@@ -1,20 +1,23 @@
 $TITLE Louis Workshop
 
 set 
-i "products sold" /bowls, tables, chairs/,
-j "inputs"        /blanks, cherry, maple/,
-i_d(i) "subset of i requiring other products for production" /tables/;
+i      "products sold" /bowls, tables, chairs/,
+j      "inputs"        /blanks, cherry, maple/,
+i_d(i) "subset of i requiring other products for production" /tables/,
+c      "customer sets" /1 * 10/;
 
 alias(i,ii);
 
-parameter
-p(i)   "Price of products sold ($ / product)"
-/
-bowls 30,
-tables 200,
-chairs 50
-/, 
+table
+p(i,c,*)   "Price of products sold ($ / product)"
+$ondelim
+$include data\demand.csv
+$offdelim
+;
 
+$exit
+
+parameter
 c(j)   "Costs of inputs used ($ / input)" 
 /
 blanks 5,
