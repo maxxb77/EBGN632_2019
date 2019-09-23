@@ -21,12 +21,14 @@ blanks 5,
 maple 15,
 cherry 10
 /,
+
 h(i)   "Hours need to produce one unit (hours / product)"
 /
 bowls 3,
 tables 20,
 chairs 4
 /
+
 d(i,i) "products required to produce another product"
 ;
 
@@ -38,10 +40,8 @@ $include data\a.csv
 $offdelim
 ;
 
-
 scalar hbar   "Total hours in a week (equal to forty hours)" /40/;
 scalar Sw_UnitReq "turn unit requirement off or on" /0/;
-
 
 Positive Variables
 X(i) "production of outputs (units)",
@@ -52,10 +52,10 @@ Variables Z "objective function value";
 
 
 Equations
-ObjFn "computed objective function value",
+ObjFn        "computed objective function value",
 Input_Req(i) "outputs required input - transformation",
-Hours_Limit "louis can only work 40 hours in a week",
-Unit_req(i) "each table requires four chair"
+Hours_Limit  "louis can only work 40 hours in a week",
+Unit_req(i)  "each table requires four chair"
 ;
 
 *Signs that can be used in GAMS
@@ -96,11 +96,11 @@ rep("profit") =  sum(i,p(i) * X.l(i))
  	
 rep("revenue") = sum(i,p(i) * X.l(i));
 
-rep("cost") = -sum(j,c(j) * Y.l(j));
+rep("cost") = sum(j,c(j) * Y.l(j));
 
 display rep;
 
-execute_unload "alldata.gdx";
+*execute_unload "alldata.gdx";
 
 
 
