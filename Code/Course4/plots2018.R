@@ -16,9 +16,9 @@ library(plotly)
 igdx("c:\\gams\\win64\\24.2")
 
 #set my working directory to where we stored the hourout.gdx file
-setwd("c:\\users\\mbrown1\\desktop\\storage\\cecon")
+setwd("c:\\users\\mbrown1\\ebgn632\\code\\course4")
 
-gdxfile = "hourout_0.gdx"
+gdxfile = "hourout_noopres.gdx"
 
 
 #for reference, here are the parameters and their descriptions that we will be loading:

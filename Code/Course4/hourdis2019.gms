@@ -43,7 +43,7 @@ $if not set GSwOpres $setglobal GSwOpRes 0
 Scalar SwSeason "Switch to have average of annual demand [0] or average of summer demand [1]" /0/;
 Scalar CAPTrade "Switch to turn on [1] or off [0] a carbon cap with trading" /0/;
 Scalar TPSTrade "Switch to turn on [1] or off [0] a carbon TPS with trading" /0/;
-Scalar SwOpRes  "Switch to  requirement for operating reserves" /%GSwOpRes%/;
+Scalar SwOpRes  "Switch to  requirement for operating reserves" /0/;
 
 *=======================
 *  Begin sets
@@ -51,6 +51,7 @@ Scalar SwOpRes  "Switch to  requirement for operating reserves" /%GSwOpRes%/;
 
 set h "hour" /h1*h24/;
 set k "season" /day, summer/;
+
 
 *table dem(h,k) "demand by season, MWH"
 $include refdem.inc
@@ -64,6 +65,7 @@ set s "states"
 
 Set SwTPS(s)  "Switch to enable or disable a TPS";
 Set SwCAP(s)  "Switch to enable or disable a carbon cap";
+
 *disable these for now
 swtps(s) = no;
 swcap(s) = no;
@@ -80,19 +82,15 @@ set f "fuels, generation technology"
         /;
 
 set f_opres(f) "technologies that can provide operating reserves" /bit, ng, sub, wat/;
-
 set pc  "plant characteristics" /cap, hr, onm/;
-
 set pid "plant id" /1*328/;
-
 set genfeas(s,f,pid,h) "general feasibility set, determines when a plant can generate";
-
 set ort "operating reserve types" /spin,flex/;
-
 
 *=======================
 *  End sets
 *=======================
+
 
 *=======================
 *  Begin data
@@ -109,12 +107,6 @@ genfeas(s,f,pid,h)$(plantdata(s,f,pid,"CAP")>0) = yes;
 *can't use solar when it's dark out
 genfeas(s,"sun",pid,h)$((ord(h)<8) or (ord(h)>18)) = NO;
 
-*set temp /1*100/;
-*parameter test;
-*test("ord",temp) = ord(temp);
-*test("val",temp) = temp.val;
-*display test;
-*genfeas(s,"sun",pid,h)$((h.val<8) or (ord(h)>18)) = NO;
 
 *note that onm costs are already in $ per mwh but we need to
 *convert heat rate from btu / kwh to mmbtu / mwh
@@ -122,6 +114,7 @@ genfeas(s,"sun",pid,h)$((ord(h)<8) or (ord(h)>18)) = NO;
 *following should really be by technology
 scalar hr_adj "heat rate adjustment to take it from full load factor to partial load factor" /1.07/;
 plantdata(s,f,pid,"hr") = hr_adj * plantdata(s,f,pid,"hr") / 1000;
+
 
 
 parameter capfac(f) "capacity availability by fuel type"
@@ -177,7 +170,11 @@ spin  0.05
 flex         0.05
 
 
+*end homework 4
+
+
 execute_unload 'inputs.gdx';
+
 
 *=======================
 *  End data
@@ -197,7 +194,7 @@ RegCAPEq(s)                        "Carbon cap regulation constraint (aggregate 
 CAPTradeEQ					   	           "Carbon cap with trade"
 RegTPSEq(s)                        "TPS regulation constraint (average carbon emissions)"
 TPSTradeEQ                         "TPS regulation with trading"
-OpResEQ(ort,s,h)                         "TPS regulation with trading"
+OpResEQ(ort,s,h)                   "TPS regulation with trading"
 ;
 
 Positive Variables
@@ -211,22 +208,25 @@ COST                               "Cost of delivering electricity ($)";
 
 *sum of costs are those from operating (onm) and fuel (hr * fcost)
 CostEQ.. COST =E= sum((s,f,pid,h)$genfeas(s,f,pid,h),GEN(s,f,pid,h) * (
-                                                 plantdata(s,f,pid,"onm")
-                                                 + plantdata(s,f,pid,"hr") * fcost(f)  )
+                                  plantdata(s,f,pid,"onm")
+                                  + plantdata(s,f,pid,"hr") * fcost(f)  )
                       );
+
 
 *generation from all states must equal the demand, depending on day
 DemEQ(H).. 
 	SUM((s,f,pid)$genfeas(s,f,pid,h),GEN(s,f,pid,h)) 
 		=G= 
-    (1-SwSeason) * dem(h,"day") + SwSeason * dem(h,"summer")  ;
+    (1-SwSeason) * dem(h,"day") 
+    + SwSeason * dem(h,"summer")  ;
 
 
 *carbon emissions must be less than the cap (if activated)
 RegCapEQ(s)$SwCAP(s).. 
 	(1-Psi(s)) * RefC(s) 
 		=g= 
-	sum((f,pid,h)$genfeas(s,f,pid,h),GEN(s,f,pid,h) * plantdata(s,f,pid,"hr") * emit(f));
+	sum((f,pid,h)$genfeas(s,f,pid,h),
+      GEN(s,f,pid,h) * plantdata(s,f,pid,"hr") * emit(f));
 
 
 RegTPSEQ(s)$SwTPS(s).. 
@@ -304,7 +304,8 @@ solve hourlydis using lp minimizing COST;
   rep_tgenh(f,h,"BAU") = sum(s,rep_genh(s,f,h,"BAU"));
   rep_gend(s,f,"BAU") = sum((pid,h)$genfeas(s,f,pid,h),gen.l(s,f,pid,h));
   rep_c(s,"BAU") = sum((f,pid,h)$genfeas(s,f,pid,h),gen.l(s,f,pid,h) * plantdata(s,f,pid,"hr") * emit(f));
-  rep_ci(s,"BAU") = sum((f,pid,h)$genfeas(s,f,pid,h),gen.l(s,f,pid,h) * plantdata(s,f,pid,"hr") * emit(f)) / sum((f,pid,h)$genfeas(s,f,pid,h),gen.l(s,f,pid,h));
+  rep_ci(s,"BAU") = sum((f,pid,h)$genfeas(s,f,pid,h),gen.l(s,f,pid,h) * plantdata(s,f,pid,"hr") * emit(f)) 
+                        / sum((f,pid,h)$genfeas(s,f,pid,h),gen.l(s,f,pid,h));
   rep_p(h,"BAU")=demeq.m(h);
 
 
@@ -318,12 +319,10 @@ REFCI(s) = rep_ci(s,"BAU");
 * CAP Scenario
 *\\\\\
 
-
 SwTPS(s) = no;
 SwCAP(s) = yes;
 
 Solve HourlyDis minimizing COST using LP;
-
 
   rep_cost("CAP") = COST.l;
   rep_genh(s,f,h,"CAP") = sum(pid$genfeas(s,f,pid,h),gen.l(s,f,pid,h));
@@ -333,7 +332,6 @@ Solve HourlyDis minimizing COST using LP;
   rep_ci(s,"CAP") = sum((f,pid,h)$genfeas(s,f,pid,h),gen.l(s,f,pid,h) * plantdata(s,f,pid,"hr") * emit(f)) / sum((f,pid,h)$genfeas(s,f,pid,h),gen.l(s,f,pid,h));
   rep_p(h,"CAP")=demeq.m(h);
   rep_permp(s,"CAP") = RegCapEQ.m(s) * 1000;
-
 
 
 *\\\\\
@@ -476,21 +474,10 @@ rep_c(s,"TPS_CO") = rep_c(s,"TPS_CO") / 1000000;
 
 
 
-
-display
-         rep_cost,
-*         rep_genh,
-         rep_gend,
-         rep_c,
-         rep_ci,
-         rep_p,
-         rep_permp;
-
-
 *Unload the data to a GDX File
 *note that here we are not specifying which parameters to export
 *this will give us access to 
-execute_unload "hourout_%GSwOpRes%.gdx";
+execute_unload "hourout_noopres.gdx";
 
 
 
